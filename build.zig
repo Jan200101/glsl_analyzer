@@ -79,6 +79,7 @@ fn addExecutable(b: *std.Build, options: struct {
         .target = options.target,
         .optimize = options.optimize,
     });
+    exe.pie = true;
     try attachModules(exe);
     return exe;
 }
