@@ -10,7 +10,7 @@ pub const FormatOptions = struct {
 pub fn format(
     tree: parse.Tree,
     source: []const u8,
-    writer: anytype,
+    writer: *std.Io.Writer,
     options: FormatOptions,
 ) !void {
     var inner_writer = Writer(@TypeOf(writer)){
@@ -154,7 +154,7 @@ fn Writer(comptime ChildWriter: type) type {
         }
 
         pub fn emitIndent(self: *Self) !void {
-            try self.child_writer.writeByteNTimes(' ', self.indentation * 4);
+            _ = try self.child_writer.splatByte(' ', self.indentation * 4);
             if (self.indentation > 0) self.preceded_by_space = true;
         }
 
@@ -676,10 +676,10 @@ fn expectIsFormatted(source: []const u8) !void {
 }
 
 fn expectFormat(source: []const u8, expected: []const u8) !void {
-    var ignored = std.ArrayList(parse.Token).init(std.testing.allocator);
+    var ignored = std.array_list.Managed(parse.Token).init(std.testing.allocator);
     defer ignored.deinit();
 
-    var diagnostics = std.ArrayList(parse.Diagnostic).init(std.testing.allocator);
+    var diagnostics = std.array_list.Managed(parse.Diagnostic).init(std.testing.allocator);
     defer diagnostics.deinit();
 
     var tree = try parse.parse(std.testing.allocator, source, .{
@@ -688,7 +688,7 @@ fn expectFormat(source: []const u8, expected: []const u8) !void {
     });
     defer tree.deinit(std.testing.allocator);
 
-    var buffer = std.ArrayList(u8).init(std.testing.allocator);
+    var buffer = std.array_list.Managed(u8).init(std.testing.allocator);
     defer buffer.deinit();
 
     try format(tree, source, buffer.writer(), .{ .ignored = ignored.items });
